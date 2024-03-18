@@ -343,18 +343,15 @@ void Scene_Zelda::sDoAction(const Action& action)
 
     if (action.type() == "START")
     {
-        if (action.type() == "START")
-        {
-            if (action.name() == "TOGGLE_TEXTURE") { m_DrawTextures = !m_DrawTextures; }
-            else if (action.name() == "TOGGLE_COLLISION") { m_DrawCollision = !m_DrawCollision; }
-            else if (action.name() == "TOGGLE_GRID") { m_DrawGrid = !m_DrawGrid; }
-            else if (action.name() == "TOGGLE_FOLLOW") { m_Follow = !m_Follow; }
-            else if (action.name() == "PAUSE") { m_Paused = !m_Paused; }
-            else if (action.name() == "QUIT") { onEnd(); }
-        }
-        else if (action.type() == "END")
-        {
+        if (action.name() == "TOGGLE_TEXTURE") { m_DrawTextures = !m_DrawTextures; }
+        else if (action.name() == "TOGGLE_COLLISION") { m_DrawCollision = !m_DrawCollision; }
+        else if (action.name() == "TOGGLE_GRID") { m_DrawGrid = !m_DrawGrid; }
+        else if (action.name() == "TOGGLE_FOLLOW") { m_Follow = !m_Follow; }
+        else if (action.name() == "PAUSE") { m_Paused = !m_Paused; }
+        else if (action.name() == "QUIT") { onEnd(); }
+    }
+    else if (action.type() == "END")
+    {
 
-        }
     }
 }

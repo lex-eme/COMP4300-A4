@@ -7,7 +7,6 @@ class Scene_Zelda : public Scene
 	struct PlayerConfig
 	{
 		float X, Y, CX, CY, SPEED, HEALTH;
-		std::string WEAPON;
 	};
 
 	std::string					m_LevelPath;
