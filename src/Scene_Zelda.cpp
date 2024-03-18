@@ -14,14 +14,15 @@ void Scene_Zelda::update()
 {
     m_EntityManager.update();
 
-    // Implement pause functionality
-
-    sAI();
-    sMovement();
-    sStatus();
-    sCollision();
-    sAnimation();
-    sCamera();
+    if (!m_Paused)
+    {
+        sAI();
+        sMovement();
+        sStatus();
+        sCollision();
+        sAnimation();
+        sCamera();
+    }
     sGUI();
 
     m_CurrentFrame += 1;
@@ -41,7 +42,7 @@ void Scene_Zelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE");
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION");
     registerAction(sf::Keyboard::G, "TOGGLE_GRID");
-    registerAction(sf::Keyboard::G, "TOGGLE_FOLLOW");
+    registerAction(sf::Keyboard::F, "TOGGLE_FOLLOW");
 }
 
 void Scene_Zelda::loadLevel(const std::string& filename)
@@ -118,7 +119,7 @@ void Scene_Zelda::spawnSword(std::shared_ptr<Entity> entity)
 
 void Scene_Zelda::onEnd()
 {
-
+    m_Game->changeScene("MENU", nullptr, true);
 }
 
 std::shared_ptr<Entity> Scene_Zelda::player()
@@ -198,7 +199,11 @@ void Scene_Zelda::sGUI()
 
 void Scene_Zelda::sRender()
 {
-    m_Game->window().clear(sf::Color(255, 192, 122));
+    if (m_Paused)
+        m_Game->window().clear(sf::Color(205, 142, 72));
+    else
+        m_Game->window().clear(sf::Color(255, 192, 122));
+
     sf::RectangleShape tick({ 1.0f, 6.0f });
     tick.setFillColor(sf::Color::Black);
 

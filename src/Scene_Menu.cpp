@@ -36,7 +36,7 @@ void Scene_Menu::init()
 	m_MenuStrings.push_back("Level  3");
 
 	m_LevelPaths.push_back("assets/levels/level1.txt");
-	m_LevelPaths.push_back("assets/levels/level2.txt");
+	m_LevelPaths.push_back("assets/levels/level1.txt");
 	m_LevelPaths.push_back("assets/levels/level1.txt");
 
 	m_MenuText.setFont(m_Game->assets().getFont("Megaman"));
