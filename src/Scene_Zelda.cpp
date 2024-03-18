@@ -158,6 +158,17 @@ void Scene_Zelda::sCollision()
     // You may want to use helper functions for these behaviors or this function will get long
 }
 
+static void entityGUI(std::shared_ptr<Entity> e)
+{
+    ImGui::Text("%i", e->id());
+    ImGui::SameLine();
+    ImGui::Text(e->tag().c_str());
+    ImGui::SameLine();
+    ImGui::Text(e->get<CAnimation>().animation.getName().c_str());
+    ImGui::SameLine();
+    ImGui::Text("(%i,%i)", (int)e->get<CTransform>().pos.x, (int)e->get<CTransform>().pos.y);
+}
+
 void Scene_Zelda::sGUI()
 {
     ImGui::Begin("Scene Properties");
@@ -185,8 +196,27 @@ void Scene_Zelda::sGUI()
 
         if (ImGui::BeginTabItem("Entity Manager"))
         {
-            // TODO
-            ImGui::Text("Do this too");
+            if (ImGui::CollapsingHeader("All entities", ImGuiTreeNodeFlags_NoTreePushOnOpen))
+            {
+                for (auto e : m_EntityManager.getEntities())
+                {
+                    entityGUI(e);
+                }
+            }
+
+            if (ImGui::CollapsingHeader("By tag"))
+            {
+                for (auto& [tag, entityVec] : m_EntityManager.getEntityMap())
+                {
+                    if (ImGui::CollapsingHeader(tag.c_str()))
+                    {
+                        for (auto e : entityVec)
+                        {
+                            entityGUI(e);
+                        }
+                    }
+                }
+            }
 
             ImGui::EndTabItem();
         }
