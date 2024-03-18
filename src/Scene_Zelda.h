@@ -43,5 +43,8 @@ private:
 	void sGUI();
 	void sRender() override;
 	void sDoAction(const Action& action) override;
+
+	// Helper
+	void moveEntities(const std::string& tag);
 };
 

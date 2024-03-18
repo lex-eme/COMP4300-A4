@@ -43,6 +43,13 @@ void Scene_Zelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION");
     registerAction(sf::Keyboard::G, "TOGGLE_GRID");
     registerAction(sf::Keyboard::F, "TOGGLE_FOLLOW");
+    registerAction(sf::Keyboard::Z, "UP");
+    registerAction(sf::Keyboard::S, "DOWN");
+    registerAction(sf::Keyboard::Q, "LEFT");
+    registerAction(sf::Keyboard::D, "RIGHT");
+
+    // TODO: remove
+    m_PlayerConfig.SPEED = 5.0f;
 }
 
 void Scene_Zelda::loadLevel(const std::string& filename)
@@ -65,7 +72,7 @@ Vec2 Scene_Zelda::getPosition(int rx, int ry, int tx, int ty) const
 
 void Scene_Zelda::spawnPlayer()
 {
-    auto p = m_EntityManager.addEntity("player");
+    auto p = m_EntityManager.addEntity("Player");
     p->add<CTransform>(Vec2(640, 480));
     p->add<CAnimation>(m_Game->assets().getAnimation("StandDown"), true);
     p->add<CBoundingBox>(Vec2(48, 48), true, false);
@@ -101,10 +108,46 @@ void Scene_Zelda::sCamera()
     m_Game->window().setView(view);
 }
 
+void Scene_Zelda::moveEntities(const std::string& tag)
+{
+    for (auto e : m_EntityManager.getEntities(tag))
+    {
+        auto& transform = e->get<CTransform>();
+        transform.prevPos = transform.pos;
+        transform.pos += transform.velocity;
+    }
+}
+
 void Scene_Zelda::sMovement()
 {
-    // Implement all player movement functionality here based on
-    // the player's input component variables
+    auto& input = player()->get<CInput>();
+    auto& transform = player()->get<CTransform>();
+
+    float speed = m_PlayerConfig.SPEED;
+    if (input.up)
+    {
+        transform.velocity = Vec2(0.0f, -speed);
+    }
+    else if (input.down)
+    {
+        transform.velocity = Vec2(0.0f, speed);
+    }
+    else if (input.right)
+    {
+        transform.velocity = Vec2(speed, 0.0f);
+    }
+    else if (input.left)
+    {
+        transform.velocity = Vec2(-speed, 0.0f);
+    }
+    else
+    {
+        transform.velocity = Vec2();
+    }
+
+    moveEntities("Player");
+    moveEntities("Tektite");
+    moveEntities("Knight");
 }
 
 
@@ -125,7 +168,7 @@ void Scene_Zelda::onEnd()
 std::shared_ptr<Entity> Scene_Zelda::player()
 {
 
-    auto& entities = m_EntityManager.getEntities("player");
+    auto& entities = m_EntityManager.getEntities("Player");
     if (entities.size() != 1)
     {
         std::cerr << "There is currently no player entity" << std::endl;
@@ -375,21 +418,26 @@ void Scene_Zelda::sDoAction(const Action& action)
     // Implement all actions described for the game here
     // Only the setting of the player's input component variables should be set here
     // Do minial logoc in this function
+    auto& input = player()->get<CInput>();
 
     if (action.type() == "START")
     {
-        if (action.type() == "START")
-        {
-            if (action.name() == "TOGGLE_TEXTURE") { m_DrawTextures = !m_DrawTextures; }
-            else if (action.name() == "TOGGLE_COLLISION") { m_DrawCollision = !m_DrawCollision; }
-            else if (action.name() == "TOGGLE_GRID") { m_DrawGrid = !m_DrawGrid; }
-            else if (action.name() == "TOGGLE_FOLLOW") { m_Follow = !m_Follow; }
-            else if (action.name() == "PAUSE") { m_Paused = !m_Paused; }
-            else if (action.name() == "QUIT") { onEnd(); }
-        }
-        else if (action.type() == "END")
-        {
-
-        }
+        if (action.name() == "TOGGLE_TEXTURE") { m_DrawTextures = !m_DrawTextures; }
+        else if (action.name() == "TOGGLE_COLLISION") { m_DrawCollision = !m_DrawCollision; }
+        else if (action.name() == "TOGGLE_GRID") { m_DrawGrid = !m_DrawGrid; }
+        else if (action.name() == "TOGGLE_FOLLOW") { m_Follow = !m_Follow; }
+        else if (action.name() == "PAUSE") { m_Paused = !m_Paused; }
+        else if (action.name() == "QUIT") { onEnd(); }
+        else if (action.name() == "UP") { input.up = true; }
+        else if (action.name() == "DOWN") { input.down = true; }
+        else if (action.name() == "LEFT") { input.left = true; }
+        else if (action.name() == "RIGHT") { input.right = true; }
+    }
+    else if (action.type() == "END")
+    {
+        if (action.name() == "UP") { input.up = false; }
+        else if (action.name() == "DOWN") { input.down = false; }
+        else if (action.name() == "LEFT") { input.left = false; }
+        else if (action.name() == "RIGHT") { input.right = false; }
     }
 }
