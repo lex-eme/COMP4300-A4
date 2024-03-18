@@ -4,6 +4,8 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
+#include <fstream>
+
 Scene_Zelda::Scene_Zelda(GameEngine* gameEngine, const std::string& levelPath)
     : Scene(gameEngine), m_LevelPath(levelPath)
 {
@@ -47,39 +49,94 @@ void Scene_Zelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::S, "DOWN");
     registerAction(sf::Keyboard::Q, "LEFT");
     registerAction(sf::Keyboard::D, "RIGHT");
-
-    // TODO: remove
-    m_PlayerConfig.SPEED = 5.0f;
 }
 
 void Scene_Zelda::loadLevel(const std::string& filename)
 {
     m_EntityManager = EntityManager();
 
-    // load the level file and put all entities in the manager
-    // use the getPosition() function below to convert room-tile coords to game world coords
+    std::ifstream fin(filename);
+    std::string type;
+
+    while (fin >> type)
+    {
+        if (type == "Tile")
+        {
+            std::string name;
+            int RX, RY, TX, TY, BM, BV;
+            fin >> name >> RX >> RY >> TX >> TY >> BM >> BV;
+
+            auto e = m_EntityManager.addEntity(type);
+
+            auto& anim = m_Game->assets().getAnimation(name);
+            e->add<CAnimation>(anim, true);
+            e->add<CTransform>(getPosition(RX, RY, TX, TY));
+            e->add<CBoundingBox>(anim.getSize(), BM == 1, BV == 1);
+        }
+        else if (type == "NPC")
+        {
+            std::string name, AI;
+            int RX, RY, TX, TY, BM, BV, H, D;
+            fin >> name >> RX >> RY >> TX >> TY >> BM >> BV >> H >> D >> AI;
+
+            auto e = m_EntityManager.addEntity(type);
+
+            auto& anim = m_Game->assets().getAnimation(name);
+            Vec2 pos = getPosition(RX, RY, TX, TY);
+            e->add<CAnimation>(anim, true);
+            e->add<CTransform>(pos);
+            e->add<CBoundingBox>(anim.getSize(), BM == 1, BV == 1);
+            e->add<CHealth>(H);
+            e->add<CDamage>(D);
+
+            if (AI == "Follow")
+            {
+                float s;
+                fin >> s;
+                e->add<CFollowPlayer>(pos, s);
+            }
+            else if (AI == "Patrol")
+            {
+                float s;
+                int n;
+                fin >> s >> n;
+
+                std::vector<Vec2> positions;
+                for (int i = 0; i < n; i++)
+                {
+                    int x, y;
+                    fin >> x >> y;
+                    positions.push_back(getPosition(RX, RY, x, y));
+                }
+                e->add<CPatrol>(positions, s);
+            }
+        }
+        else if (type == "Player")
+        {
+            fin >> m_PlayerConfig.X >> m_PlayerConfig.Y >> m_PlayerConfig.CX
+                >> m_PlayerConfig.CY >> m_PlayerConfig.SPEED >> m_PlayerConfig.HEALTH;
+        }
+    }
 
     spawnPlayer();
 }
 
 Vec2 Scene_Zelda::getPosition(int rx, int ry, int tx, int ty) const
 {
-    // Implement this function, which takes in the room (rx, ry) coordinate
-    // as well as the tile (tx, ty) coordinate, and returns the Vec2 game world
-    // position of the center of the entity
-    return Vec2();
+    float x = rx * width() + tx * m_GridSize.x + m_GridSize. x / 2;
+    float y = ry * height() + ty * m_GridSize.y + m_GridSize.y / 2;
+    return Vec2(x, y);
 }
 
 void Scene_Zelda::spawnPlayer()
 {
     auto p = m_EntityManager.addEntity("Player");
-    p->add<CTransform>(Vec2(640, 480));
     p->add<CAnimation>(m_Game->assets().getAnimation("StandDown"), true);
-    p->add<CBoundingBox>(Vec2(48, 48), true, false);
-    p->add<CHealth>(7, 3);
-
-    // Implement this function so that it uses the parameters input from the level file
-    // These parameters should be stored in the m_PlayerConfig variable
+    p->add<CTransform>(Vec2(m_PlayerConfig.X, m_PlayerConfig.Y));
+    p->add<CBoundingBox>(Vec2(m_PlayerConfig.CX, m_PlayerConfig.CY), true, false);
+    p->add<CHealth>(m_PlayerConfig.HEALTH);
+    p->add<CInput>();
+    p->add<CState>();
 }
 
 void Scene_Zelda::sAnimation()
@@ -146,8 +203,7 @@ void Scene_Zelda::sMovement()
     }
 
     moveEntities("Player");
-    moveEntities("Tektite");
-    moveEntities("Knight");
+    moveEntities("NPC");
 }
 
 

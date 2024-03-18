@@ -103,8 +103,8 @@ struct CHealth : public Component
 	int current = 1;
 
 	CHealth() {}
-	CHealth(int m, int c)
-		: max(m), current(c) {}
+	CHealth(int m)
+		: max(m), current(m) {}
 };
 
 struct CPatrol : public Component
