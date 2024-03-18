@@ -41,7 +41,7 @@ void Scene_Zelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE");
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION");
     registerAction(sf::Keyboard::G, "TOGGLE_GRID");
-    registerAction(sf::Keyboard::G, "TOGGLE_FOLLOW");
+    registerAction(sf::Keyboard::F, "TOGGLE_FOLLOW");
 }
 
 void Scene_Zelda::loadLevel(const std::string& filename)
