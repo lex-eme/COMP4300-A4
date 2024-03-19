@@ -150,17 +150,25 @@ void Scene_Zelda::sAnimation()
 
 void Scene_Zelda::sCamera()
 {
-    // TODO implement camera logic
-
     sf::View view = m_Game->window().getView();
+    auto& pos = player()->get<CTransform>().pos;
 
     if (m_Follow)
     {
-        // TODO
+        view.setCenter(pos.x, pos.y);
     }
     else
     {
-        // TODO
+        int w = (int)width();
+        int h = (int)height();
+
+        int rx = (int)pos.x / w;
+        if (pos.x < 0.0f) rx -= 1;
+
+        int ry = (int)pos.y / h;
+        if (pos.y < 0.0f) ry -= 1;
+
+        view.setCenter(rx * w + w / 2.0f, ry * h + h / 2.0f);
     }
 
     m_Game->window().setView(view);
@@ -482,10 +490,10 @@ void Scene_Zelda::sRender()
 
         for (float x = nextGridX; x < rightX; x += m_GridSize.x)
         {
-            drawLine(Vec2(x, 0.0f), Vec2(x, (float)height()));
+            drawLine(Vec2(x, topY), Vec2(x, bottomY));
         }
 
-        for (float y = 0; y < bottomY; y += m_GridSize.y)
+        for (float y = nextGridY; y < bottomY; y += m_GridSize.y)
         {
             drawLine(Vec2(leftX, y), Vec2(rightX, y));
 
