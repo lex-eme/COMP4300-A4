@@ -266,10 +266,10 @@ void Scene_Zelda::sRender()
 
         for (float x = nextGridX; x < rightX; x += m_GridSize.x)
         {
-            drawLine(Vec2(x, 0.0f), Vec2(x, height()));
+            drawLine(Vec2(x, topY), Vec2(x, bottomY));
         }
 
-        for (float y = 0; y < bottomY; y += m_GridSize.y)
+        for (float y = nextGridY; y < bottomY; y += m_GridSize.y)
         {
             drawLine(Vec2(leftX, y), Vec2(rightX, y));
 
@@ -278,7 +278,7 @@ void Scene_Zelda::sRender()
                 std::string xCell = std::to_string((int)x / (int)m_GridSize.x);
                 std::string yCell = std::to_string((int)y / (int)m_GridSize.y);
                 m_GridText.setString("(" + xCell + "," + yCell + ")");
-                m_GridText.setPosition(x + 3.0f, height() - y - m_GridSize.y + 2.0f);
+                m_GridText.setPosition(x + 3.0f, y + 2.0f);
                 m_Game->window().draw(m_GridText);
             }
         }
