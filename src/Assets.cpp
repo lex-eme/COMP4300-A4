@@ -38,6 +38,15 @@ void Assets::loadFromFile(const std::string& path)
 
 			addFont(name, path);
 		}
+		else if (type == "Sound")
+		{
+			std::string name;
+			std::string path;
+
+			fin >> name >> path;
+
+			addSound(name, path);
+		}
 	}
 }
 

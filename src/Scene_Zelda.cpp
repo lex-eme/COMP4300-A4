@@ -50,6 +50,7 @@ void Scene_Zelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::S, "DOWN");
     registerAction(sf::Keyboard::Q, "LEFT");
     registerAction(sf::Keyboard::D, "RIGHT");
+    registerAction(sf::Keyboard::Space, "ATTACK");
 }
 
 void Scene_Zelda::loadLevel(const std::string& filename)
@@ -184,6 +185,24 @@ void Scene_Zelda::moveEntities(const std::string& tag)
     }
 }
 
+static void placeSword(std::string& animName, CTransform& sTransform, const CTransform& eTransform)
+{
+    if (eTransform.facing.x != 0.0f)
+    {
+        sTransform.pos.x = eTransform.pos.x + eTransform.facing.x * 60.0f;
+        sTransform.pos.y = eTransform.pos.y;
+        sTransform.scale.x = eTransform.facing.x;
+        animName = "SwordRight";
+    }
+    else if (eTransform.facing.y != 0.0f)
+    {
+        sTransform.pos.y = eTransform.pos.y - eTransform.facing.y * 60.0f;
+        sTransform.pos.x = eTransform.pos.x;
+        sTransform.scale.y = eTransform.facing.y;
+        animName = "SwordUp";
+    }
+}
+
 void Scene_Zelda::sMovement()
 {
     auto& input = player()->get<CInput>();
@@ -193,18 +212,26 @@ void Scene_Zelda::sMovement()
     if (input.up)
     {
         transform.velocity = Vec2(0.0f, -speed);
+        transform.facing.x = 0.0f;
+        transform.facing.y = 1.0f;
     }
     else if (input.down)
     {
         transform.velocity = Vec2(0.0f, speed);
+        transform.facing.x = 0.0f;
+        transform.facing.y = -1.0f;
     }
     else if (input.right)
     {
         transform.velocity = Vec2(speed, 0.0f);
+        transform.facing.x = 1.0f;
+        transform.facing.y = 0.0f;
     }
     else if (input.left)
     {
         transform.velocity = Vec2(-speed, 0.0f);
+        transform.facing.x = -1.0f;
+        transform.facing.y = 0.0f;
     }
     else
     {
@@ -213,16 +240,33 @@ void Scene_Zelda::sMovement()
 
     moveEntities("Player");
     moveEntities("NPC");
-}
 
+    for (auto sword : m_EntityManager.getEntities("Sword"))
+    {
+        std::string animName;
+        placeSword(animName, sword->get<CTransform>(), player()->get<CTransform>());
+        sword->add<CAnimation>(m_Game->assets().getAnimation(animName), true);
+    }
+}
 
 void Scene_Zelda::spawnSword(std::shared_ptr<Entity> entity)
 {
-    // Implement the spawning of the sword which
-    // - should be given the appropriate lifespan
-    // - should spawn at the appropriate location based on player's facing direction
-    // - be given a damage value of 1
-    // - should play a "Slash" sound
+    auto& input = entity->get<CInput>();
+    if (input.attack)
+        return;
+ 
+    auto sword = m_EntityManager.addEntity("Sword");
+    auto& eTransform = entity->get<CTransform>();
+    sword->add<CTransform>();
+    std::string animName;
+    placeSword(animName, sword->get<CTransform>(), eTransform);
+    auto& anim = m_Game->assets().getAnimation(animName);
+    sword->add<CAnimation>(anim, true);
+    sword->add<CBoundingBox>(anim.getSize());
+    sword->add<CDamage>(1);
+    sword->add<CLifeSpan>(10, m_CurrentFrame);
+    input.attack = true;
+    m_Game->playSound("Slash");
 }
 
 void Scene_Zelda::onEnd()
@@ -232,7 +276,6 @@ void Scene_Zelda::onEnd()
 
 std::shared_ptr<Entity> Scene_Zelda::player()
 {
-
     auto& entities = m_EntityManager.getEntities("Player");
     if (entities.size() != 1)
     {
@@ -245,8 +288,27 @@ std::shared_ptr<Entity> Scene_Zelda::player()
 
 void Scene_Zelda::sStatus()
 {
-    // Implement lifespan here
-    // Implement invincibility frame here
+    for (auto sword : m_EntityManager.getEntities("Sword"))
+    {
+        auto& lifespan = sword->get<CLifeSpan>();
+
+        if ((int)m_CurrentFrame - lifespan.frameCreated > lifespan.lifespan)
+        {
+            sword->destroy();
+            player()->get<CInput>().attack = false;
+        }
+    }
+    
+    if (player()->has<CInvincibility>())
+    {
+        auto& invincibility = player()->get<CInvincibility>();
+        invincibility.iframes -= 1;
+
+        if (invincibility.iframes < 0)
+        {
+            player()->remove<CInvincibility>();
+        }
+    }
 }
 
 void Scene_Zelda::sAI()
@@ -310,12 +372,17 @@ void Scene_Zelda::playerEnemyCollision()
             {
                 p->destroy();
                 spawnPlayer();
+                m_Game->playSound("LinkDie");
+            }
+            else
+            {
+                m_Game->playSound("LinkHurt");
             }
         }
     }
 }
 
-static void resolveHeartCollision(std::shared_ptr<Entity> heart, std::shared_ptr<Entity> entity)
+void Scene_Zelda::resolveHeartCollision(std::shared_ptr<Entity> heart, std::shared_ptr<Entity> entity)
 {
     Vec2 overlap = Physics::GetOverlap(heart, entity);
     Vec2 prevOverlap = Physics::GetPreviousOverlap(heart, entity);
@@ -324,6 +391,7 @@ static void resolveHeartCollision(std::shared_ptr<Entity> heart, std::shared_ptr
     {
         entity->get<CHealth>().current = entity->get<CHealth>().max;
         heart->destroy();
+        m_Game->playSound("GetItem");
     }
 }
 
@@ -335,6 +403,41 @@ void Scene_Zelda::heartCollision()
             continue;
 
         resolveHeartCollision(tile, player());
+
+        for (auto enemy : m_EntityManager.getEntities("NPC"))
+        {
+            resolveHeartCollision(tile, enemy);
+        }
+    }
+}
+
+void Scene_Zelda::swordEnemyCollision()
+{
+    for (auto sword : m_EntityManager.getEntities("Sword"))
+    {
+        if (!sword->has<CDamage>())
+            continue;
+
+        for (auto enemy : m_EntityManager.getEntities("NPC"))
+        {
+            Vec2 overlap = Physics::GetOverlap(sword, enemy);
+
+            if (overlap.x >= 0.0f && overlap.y >= 0.0f)
+            {
+                enemy->get<CHealth>().current -= sword->get<CDamage>().damage;
+                sword->remove<CDamage>();
+
+                if (enemy->get<CHealth>().current <= 0)
+                {
+                    enemy->destroy();
+                    m_Game->playSound("EnemyDie");
+                }
+                else
+                {
+                    m_Game->playSound("EnemyHit");
+                }
+            }
+        }
     }
 }
 
@@ -342,7 +445,7 @@ void Scene_Zelda::sCollision()
 {
     tileCollision();
     playerEnemyCollision();
-    // Implement Sword - NPC collisions
+    swordEnemyCollision();
     heartCollision();
     // Implement black tile collisions / teleporting
 }
@@ -563,7 +666,7 @@ void Scene_Zelda::sDoAction(const Action& action)
 {
     // Implement all actions described for the game here
     // Only the setting of the player's input component variables should be set here
-    // Do minial logoc in this function
+    // Do minial logic in this function
     auto& input = player()->get<CInput>();
 
     if (action.type() == "START")
@@ -578,6 +681,7 @@ void Scene_Zelda::sDoAction(const Action& action)
         else if (action.name() == "DOWN") { input.down = true; }
         else if (action.name() == "LEFT") { input.left = true; }
         else if (action.name() == "RIGHT") { input.right = true; }
+        else if (action.name() == "ATTACK") { spawnSword(player()); }
     }
     else if (action.type() == "END")
     {

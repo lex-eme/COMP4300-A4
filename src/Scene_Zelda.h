@@ -48,4 +48,6 @@ private:
 	void tileCollision();
 	void playerEnemyCollision();
 	void heartCollision();
+	void resolveHeartCollision(std::shared_ptr<Entity> heart, std::shared_ptr<Entity> entity);
+	void swordEnemyCollision();
 };
