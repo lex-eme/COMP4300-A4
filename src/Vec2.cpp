@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-constexpr auto PI = 3.14159265;
+constexpr auto PI = 3.14159265f;
 
 Vec2::Vec2() {}
 
