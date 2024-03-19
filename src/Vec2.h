@@ -31,6 +31,7 @@ struct Vec2
 	Vec2& setMag(float len);
 	Vec2& rotate(float theta);
 	Vec2& lerp(Vec2& other, float amount);
+	float cross(Vec2& other);
 
 	friend std::ostream& operator<<(std::ostream& os, const Vec2& dt);
 };

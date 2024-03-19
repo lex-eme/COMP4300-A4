@@ -121,6 +121,11 @@ Vec2& Vec2::lerp(Vec2& other, float amount)
 	return *this;
 }
 
+float Vec2::cross(Vec2& other)
+{
+	return x * other.y - y * other.x;
+}
+
 std::ostream& operator<<(std::ostream& os, const Vec2& dt) {
 	os << '(' << dt.x << ',' << dt.y << ')';
 	return os;
