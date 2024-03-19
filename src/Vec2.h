@@ -27,6 +27,7 @@ struct Vec2
 	float dist(const Vec2& rhs) const;
 	float distSq(const Vec2& rhs) const;
 	float mag() const;
+	float cross(const Vec2& rhs) const;
 	Vec2& normalize();
 	Vec2& setMag(float len);
 	Vec2& rotate(float theta);

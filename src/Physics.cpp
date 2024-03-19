@@ -33,7 +33,16 @@ bool Physics::IsInside(const Vec2& pos, std::shared_ptr<Entity> e)
 
 Intersect Physics::LineIntersect(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d)
 {
-	return { false, Vec2() };
+	Vec2 r = b - a;
+	Vec2 s = d - c;
+	float rxs = r.cross(s);
+	Vec2 cma = c - a;
+	float t = cma.cross(s) / rxs;
+	float u = cma.cross(r) / rxs;
+	if (t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f)
+		return { true, Vec2(a.x + t * r.x, a.y + t * r.y) };
+	else
+		return { false, Vec2() };
 }
 
 bool Physics::EntityIntersect(const Vec2& a, const Vec2& b, std::shared_ptr<Entity> e)

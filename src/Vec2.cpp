@@ -89,6 +89,11 @@ float Vec2::mag() const
 	return sqrt(x * x + y * y);
 }
 
+float Vec2::cross(const Vec2& rhs) const
+{
+	return x * rhs.y - y * rhs.x;
+}
+
 Vec2& Vec2::normalize()
 {
 	float m = mag();
