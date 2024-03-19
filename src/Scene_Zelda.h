@@ -45,5 +45,7 @@ private:
 
 	// Helper
 	void moveEntities(const std::string& tag);
+	void tileCollision();
+	void playerEnemyCollision();
+	void heartCollision();
 };
-

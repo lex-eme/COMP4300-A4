@@ -7,7 +7,6 @@
 
 class Scene_Menu : public Scene
 {
-	std::string					m_Title;
 	std::vector<std::string>	m_MenuStrings;
 	std::vector<std::string>	m_LevelPaths;
 	sf::Text					m_MenuText;

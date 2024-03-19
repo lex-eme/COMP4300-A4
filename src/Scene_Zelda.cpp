@@ -1,6 +1,7 @@
 #include "Scene_Zelda.h"
 
 #include "GameEngine.h"
+#include "Physics.h"
 #include "imgui.h"
 #include "imgui-SFML.h"
 
@@ -35,7 +36,7 @@ void Scene_Zelda::init(const std::string& levelPath)
     loadLevel(levelPath);
 
     m_GridText.setCharacterSize(12);
-    m_GridText.setFont(m_Game->assets().getFont("Tech"));
+    m_GridText.setFont(m_Game->assets().getFont("Mario"));
 
     // Register the actions required to play the game
 
@@ -123,8 +124,8 @@ void Scene_Zelda::loadLevel(const std::string& filename)
 
 Vec2 Scene_Zelda::getPosition(int rx, int ry, int tx, int ty) const
 {
-    float x = rx * width() + tx * m_GridSize.x + m_GridSize. x / 2;
-    float y = ry * height() + ty * m_GridSize.y + m_GridSize.y / 2;
+    float x = rx * (float)width() + tx * m_GridSize.x + m_GridSize. x / 2;
+    float y = ry * (float)height() + ty * m_GridSize.y + m_GridSize.y / 2;
     return Vec2(x, y);
 }
 
@@ -134,7 +135,7 @@ void Scene_Zelda::spawnPlayer()
     p->add<CAnimation>(m_Game->assets().getAnimation("StandDown"), true);
     p->add<CTransform>(Vec2(m_PlayerConfig.X, m_PlayerConfig.Y));
     p->add<CBoundingBox>(Vec2(m_PlayerConfig.CX, m_PlayerConfig.CY), true, false);
-    p->add<CHealth>(m_PlayerConfig.HEALTH);
+    p->add<CHealth>((int)m_PlayerConfig.HEALTH);
     p->add<CInput>();
     p->add<CState>();
 }
@@ -246,15 +247,96 @@ void Scene_Zelda::sAI()
     // Implement Patrol behavior
 }
 
+static void resolveTileCollision(std::shared_ptr<Entity> tile, std::shared_ptr<Entity> entity)
+{
+    Vec2 overlap = Physics::GetOverlap(tile, entity);
+    Vec2 prevOverlap = Physics::GetPreviousOverlap(tile, entity);
+
+    if (overlap.x >= 0.0f && overlap.y >= 0.0f)
+    {
+        auto& tilePos = tile->get<CTransform>().pos;
+        auto& entityPos = entity->get<CTransform>().pos;
+        auto& entityPrevPos = entity->get<CTransform>().prevPos;
+
+        if (prevOverlap.y > 0.0f)
+        {
+            entityPos.x += entityPos.x < tilePos.x ? -overlap.x : overlap.x;
+        }
+
+        if (prevOverlap.x > 0.0f)
+        {
+            entityPos.y += entityPos.y < tilePos.y ? -overlap.y : overlap.y;
+        }
+    }
+}
+
+void Scene_Zelda::tileCollision()
+{
+    for (auto tile : m_EntityManager.getEntities("Tile"))
+    {
+        resolveTileCollision(tile, player());
+
+        for (auto npc : m_EntityManager.getEntities("NPC"))
+        {
+            resolveTileCollision(tile, npc);
+        }
+    }
+}
+
+void Scene_Zelda::playerEnemyCollision()
+{
+    auto p = player();
+
+    if (p->has<CInvincibility>())
+        return;
+
+    for (auto enemy : m_EntityManager.getEntities("NPC"))
+    {
+        Vec2 overlap = Physics::GetOverlap(enemy, p);
+        if (overlap.x >= 0.0f && overlap.y >= 0.0f)
+        {
+            p->get<CHealth>().current -= enemy->get<CDamage>().damage;
+            p->add<CInvincibility>(30);
+
+            if (p->get<CHealth>().current <= 0)
+            {
+                p->destroy();
+                spawnPlayer();
+            }
+        }
+    }
+}
+
+static void resolveHeartCollision(std::shared_ptr<Entity> heart, std::shared_ptr<Entity> entity)
+{
+    Vec2 overlap = Physics::GetOverlap(heart, entity);
+    Vec2 prevOverlap = Physics::GetPreviousOverlap(heart, entity);
+
+    if (overlap.x >= 0.0f && overlap.y >= 0.0f)
+    {
+        entity->get<CHealth>().current = entity->get<CHealth>().max;
+        heart->destroy();
+    }
+}
+
+void Scene_Zelda::heartCollision()
+{
+    for (auto tile : m_EntityManager.getEntities("Tile"))
+    {
+        if (tile->get<CAnimation>().animation.getName() != "Heart")
+            continue;
+
+        resolveHeartCollision(tile, player());
+    }
+}
+
 void Scene_Zelda::sCollision()
 {
-    // Implement entity - tile collisions
-    // Implement player - enemy collisions with appropriate damage calculations
+    tileCollision();
+    playerEnemyCollision();
     // Implement Sword - NPC collisions
-    // Implement entity - heart collisions and life gain logic
+    heartCollision();
     // Implement black tile collisions / teleporting
-
-    // You may want to use helper functions for these behaviors or this function will get long
 }
 
 static void entityGUI(std::shared_ptr<Entity> e)
@@ -400,7 +482,7 @@ void Scene_Zelda::sRender()
 
         for (float x = nextGridX; x < rightX; x += m_GridSize.x)
         {
-            drawLine(Vec2(x, 0.0f), Vec2(x, height()));
+            drawLine(Vec2(x, 0.0f), Vec2(x, (float)height()));
         }
 
         for (float y = 0; y < bottomY; y += m_GridSize.y)
@@ -412,7 +494,7 @@ void Scene_Zelda::sRender()
                 std::string xCell = std::to_string((int)x / (int)m_GridSize.x);
                 std::string yCell = std::to_string((int)y / (int)m_GridSize.y);
                 m_GridText.setString("(" + xCell + "," + yCell + ")");
-                m_GridText.setPosition(x + 3.0f, height() - y - m_GridSize.y + 2.0f);
+                m_GridText.setPosition(x + 3.0f, y + 2.0f);
                 m_Game->window().draw(m_GridText);
             }
         }

@@ -30,7 +30,6 @@ void Scene_Menu::init()
 	registerAction(sf::Keyboard::Q, "QUIT");
 	registerAction(sf::Keyboard::Escape, "QUIT");
 
-	m_Title = "Mega Mario";
 	m_MenuStrings.push_back("Level  1");
 	m_MenuStrings.push_back("Level  2");
 	m_MenuStrings.push_back("Level  3");
