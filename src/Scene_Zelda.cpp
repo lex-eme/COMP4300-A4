@@ -141,8 +141,69 @@ void Scene_Zelda::spawnPlayer()
     p->add<CState>();
 }
 
+static void placeSword(std::string& animName, CTransform& sTransform, const CTransform& eTransform)
+{
+    if (eTransform.facing.x != 0.0f)
+    {
+        sTransform.pos.x = eTransform.pos.x + eTransform.facing.x * 60.0f;
+        sTransform.pos.y = eTransform.pos.y;
+        sTransform.scale.x = eTransform.facing.x;
+        animName = "SwordRight";
+    }
+    else if (eTransform.facing.y != 0.0f)
+    {
+        sTransform.pos.y = eTransform.pos.y - eTransform.facing.y * 60.0f;
+        sTransform.pos.x = eTransform.pos.x;
+        sTransform.scale.y = eTransform.facing.y;
+        animName = "SwordUp";
+    }
+}
+
+static void test(std::string& animName, CTransform& transform)
+{
+    if (transform.facing.x != 0.0f)
+    {
+        animName.append("Right");
+        transform.scale.x = transform.facing.x;
+    }
+    else if (transform.facing.y == -1.0f)
+    {
+        animName.append("Down");
+        transform.scale.x = 1.0f;
+    }
+    else if (transform.facing.y == 1.0f)
+    {
+        animName.append("Up");
+        transform.scale.x = 1.0f;
+    }
+}
+
 void Scene_Zelda::sAnimation()
 {
+    auto& pTransform = player()->get<CTransform>();
+    auto& pState = player()->get<CState>();
+
+    if (pState.changed)
+    {
+        std::string animName = pState.state;
+        test(animName, pTransform);
+        player()->add<CAnimation>(m_Game->assets().getAnimation(animName), true);
+        pState.changed = false;
+    }
+
+    for (auto entity : m_EntityManager.getEntities())
+    {
+        if (entity->has<CAnimation>())
+        {
+            auto& anim = entity->get<CAnimation>();
+            anim.animation.update();
+
+            if (!anim.repeat && anim.animation.hasEnded())
+            {
+                entity->destroy();
+            }
+        }
+    }
     // Implement player facing direction animation
     // Implement sword animation based on player facing
     //  The sword should move if the player changes direction mid swing
@@ -185,57 +246,69 @@ void Scene_Zelda::moveEntities(const std::string& tag)
     }
 }
 
-static void placeSword(std::string& animName, CTransform& sTransform, const CTransform& eTransform)
-{
-    if (eTransform.facing.x != 0.0f)
-    {
-        sTransform.pos.x = eTransform.pos.x + eTransform.facing.x * 60.0f;
-        sTransform.pos.y = eTransform.pos.y;
-        sTransform.scale.x = eTransform.facing.x;
-        animName = "SwordRight";
-    }
-    else if (eTransform.facing.y != 0.0f)
-    {
-        sTransform.pos.y = eTransform.pos.y - eTransform.facing.y * 60.0f;
-        sTransform.pos.x = eTransform.pos.x;
-        sTransform.scale.y = eTransform.facing.y;
-        animName = "SwordUp";
-    }
-}
-
 void Scene_Zelda::sMovement()
 {
     auto& input = player()->get<CInput>();
     auto& transform = player()->get<CTransform>();
+    auto& state = player()->get<CState>();
 
     float speed = m_PlayerConfig.SPEED;
+    Vec2 facing = transform.facing;
+    bool run = true;
     if (input.up)
     {
         transform.velocity = Vec2(0.0f, -speed);
-        transform.facing.x = 0.0f;
-        transform.facing.y = 1.0f;
+        facing = Vec2(0.0, 1.0f);
     }
     else if (input.down)
     {
         transform.velocity = Vec2(0.0f, speed);
-        transform.facing.x = 0.0f;
-        transform.facing.y = -1.0f;
+        facing = Vec2(0.0, -1.0f);
     }
     else if (input.right)
     {
         transform.velocity = Vec2(speed, 0.0f);
-        transform.facing.x = 1.0f;
-        transform.facing.y = 0.0f;
+        facing = Vec2(1.0, 0.0f);
     }
     else if (input.left)
     {
         transform.velocity = Vec2(-speed, 0.0f);
-        transform.facing.x = -1.0f;
-        transform.facing.y = 0.0f;
+        facing = Vec2(-1.0, 0.0f);
     }
     else
     {
         transform.velocity = Vec2();
+        run = false;
+    }
+
+    if (transform.facing != facing)
+    {
+        transform.facing = facing;
+        state.changed = true;
+    }
+    if (input.attack)
+    {
+        if (state.state != "Atk")
+        {
+            state.state = "Atk";
+            state.changed = true;
+        }
+    }
+    else if (run)
+    {
+        if (state.state != "Run")
+        {
+            state.state = "Run";
+            state.changed = true;
+        }
+    }
+    else
+    {
+        if (state.state != "Stand")
+        {
+            state.state = "Stand";
+            state.changed = true;
+        }
     }
 
     moveEntities("Player");

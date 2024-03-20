@@ -84,6 +84,7 @@ struct CAnimation : public Component
 struct CState : public Component
 {
 	std::string state = "stand";
+	bool changed = false;
 
 	CState() {}
 	CState(const std::string& s)
