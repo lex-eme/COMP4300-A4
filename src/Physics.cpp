@@ -41,11 +41,25 @@ Intersect Physics::LineIntersect(const Vec2& a, const Vec2& b, const Vec2& c, co
 	float u = cma.cross(r) / rxs;
 	if (t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f)
 		return { true, Vec2(a.x + t * r.x, a.y + t * r.y) };
-	else
-		return { false, Vec2() };
+	
+	return { false, Vec2() };
 }
 
 bool Physics::EntityIntersect(const Vec2& a, const Vec2& b, std::shared_ptr<Entity> e)
 {
-	return false;
+	bool intersects = false;
+	auto& halfSize = e->get<CBoundingBox>().halfSize;
+	auto& pos = e->get<CTransform>().pos;
+
+	Vec2 tl(pos.x - halfSize.x, pos.y - halfSize.y);
+	Vec2 tr(pos.x + halfSize.x, pos.y - halfSize.y);
+	Vec2 bl(pos.x - halfSize.x, pos.y + halfSize.y);
+	Vec2 br(pos.x + halfSize.x, pos.y + halfSize.y);
+
+	intersects |= LineIntersect(a, b, tl, tr).result;
+	intersects |= LineIntersect(a, b, tr, br).result;
+	intersects |= LineIntersect(a, b, br, bl).result;
+	intersects |= LineIntersect(a, b, bl, tl).result;
+
+	return intersects;
 }

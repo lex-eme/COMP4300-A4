@@ -38,8 +38,6 @@ void Scene_Zelda::init(const std::string& levelPath)
     m_GridText.setCharacterSize(12);
     m_GridText.setFont(m_Game->assets().getFont("Mario"));
 
-    // Register the actions required to play the game
-
     registerAction(sf::Keyboard::P, "PAUSE");
     registerAction(sf::Keyboard::Escape, "QUIT");
     registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE");
@@ -204,10 +202,6 @@ void Scene_Zelda::sAnimation()
             }
         }
     }
-    // Implement player facing direction animation
-    // Implement sword animation based on player facing
-    //  The sword should move if the player changes direction mid swing
-    // Implement destruction of entities with non repeating finished animations
 }
 
 void Scene_Zelda::sCamera()
@@ -386,13 +380,40 @@ void Scene_Zelda::sStatus()
 
 void Scene_Zelda::sAI()
 {
-    // Implement Follow behavior
-    // Implement Patrol behavior
     for (auto enemy : m_EntityManager.getEntities("NPC"))
     {
         if (enemy->has<CFollowPlayer>())
         {
+            auto& follow = enemy->get<CFollowPlayer>();
+            auto& transform = enemy->get<CTransform>();
+            auto& pPos = player()->get<CTransform>().pos;
+            bool visionBlocked = false;
 
+            for (auto obstacle : m_EntityManager.getEntities())
+            {
+                if (!obstacle->has<CBoundingBox>()) continue;
+                if (!obstacle->get<CBoundingBox>().blockVision) continue;
+
+                visionBlocked |= Physics::EntityIntersect(transform.pos, pPos, obstacle);
+            }
+
+            if (visionBlocked)
+            {
+                if (follow.home.distSq(transform.pos) < 25.0f)
+                {
+                    transform.velocity = Vec2();
+                    transform.pos = follow.home;
+                }
+                else
+                {
+                    transform.velocity = follow.home - transform.pos;
+                }
+            }
+            else
+            {
+                transform.velocity = pPos - transform.pos;
+            }
+            transform.velocity.setMag(follow.speed);
         }
         
         if (enemy->has<CPatrol>())
@@ -545,15 +566,31 @@ void Scene_Zelda::sCollision()
     // Implement black tile collisions / teleporting
 }
 
-static void entityGUI(std::shared_ptr<Entity> e)
+static void entitiesTable(const EntityVec& entityVec)
 {
-    ImGui::Text("%i", e->id());
-    ImGui::SameLine();
-    ImGui::Text(e->tag().c_str());
-    ImGui::SameLine();
-    ImGui::Text(e->get<CAnimation>().animation.getName().c_str());
-    ImGui::SameLine();
-    ImGui::Text("(%i,%i)", (int)e->get<CTransform>().pos.x, (int)e->get<CTransform>().pos.y);
+    if (ImGui::BeginTable("Tag Entities", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersH | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInner))
+    {
+        ImGui::TableSetupColumn("ID");
+        ImGui::TableSetupColumn("Tag");
+        ImGui::TableSetupColumn("Anim name");
+        ImGui::TableSetupColumn("Position");
+        ImGui::TableHeadersRow();
+
+        for (auto e : entityVec)
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%i", e->id());
+            ImGui::TableNextColumn();
+            ImGui::Text(e->tag().c_str());
+            ImGui::TableNextColumn();
+            ImGui::Text(e->get<CAnimation>().animation.getName().c_str());
+            ImGui::TableNextColumn();
+            ImGui::Text("(%i,%i)", (int)e->get<CTransform>().pos.x, (int)e->get<CTransform>().pos.y);
+        }
+
+        ImGui::EndTable();
+    }
 }
 
 void Scene_Zelda::sGUI()
@@ -583,26 +620,22 @@ void Scene_Zelda::sGUI()
 
         if (ImGui::BeginTabItem("Entity Manager"))
         {
-            if (ImGui::CollapsingHeader("All entities", ImGuiTreeNodeFlags_NoTreePushOnOpen))
+            if (ImGui::TreeNode("All entities"))
             {
-                for (auto e : m_EntityManager.getEntities())
-                {
-                    entityGUI(e);
-                }
+                entitiesTable(m_EntityManager.getEntities());
+                ImGui::TreePop();
             }
 
-            if (ImGui::CollapsingHeader("By tag"))
+            if (ImGui::TreeNode("By tag"))
             {
                 for (auto& [tag, entityVec] : m_EntityManager.getEntityMap())
                 {
                     if (ImGui::CollapsingHeader(tag.c_str()))
                     {
-                        for (auto e : entityVec)
-                        {
-                            entityGUI(e);
-                        }
+                        entitiesTable(entityVec);
                     }
                 }
+                ImGui::TreePop();
             }
 
             ImGui::EndTabItem();
@@ -759,9 +792,6 @@ void Scene_Zelda::sRender()
 
 void Scene_Zelda::sDoAction(const Action& action)
 {
-    // Implement all actions described for the game here
-    // Only the setting of the player's input component variables should be set here
-    // Do minial logic in this function
     auto& input = player()->get<CInput>();
 
     if (action.type() == "START")
