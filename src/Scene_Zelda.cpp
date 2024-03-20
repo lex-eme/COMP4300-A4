@@ -159,7 +159,7 @@ static void placeSword(std::string& animName, CTransform& sTransform, const CTra
     }
 }
 
-static void test(std::string& animName, CTransform& transform)
+static void direction(std::string& animName, CTransform& transform)
 {
     if (transform.facing.x != 0.0f)
     {
@@ -186,7 +186,7 @@ void Scene_Zelda::sAnimation()
     if (pState.changed)
     {
         std::string animName = pState.state;
-        test(animName, pTransform);
+        direction(animName, pTransform);
         player()->add<CAnimation>(m_Game->assets().getAnimation(animName), true);
         pState.changed = false;
     }
@@ -388,6 +388,28 @@ void Scene_Zelda::sAI()
 {
     // Implement Follow behavior
     // Implement Patrol behavior
+    for (auto enemy : m_EntityManager.getEntities("NPC"))
+    {
+        if (enemy->has<CFollowPlayer>())
+        {
+
+        }
+        
+        if (enemy->has<CPatrol>())
+        {
+            auto& patrol = enemy->get<CPatrol>();
+            auto& transform = enemy->get<CTransform>();
+            
+            if (patrol.positions[patrol.currentPosition].distSq(transform.pos) < 25.0f)
+            {
+                patrol.currentPosition += 1;
+                patrol.currentPosition %= patrol.positions.size();
+            }
+
+            transform.velocity = patrol.positions[patrol.currentPosition] - transform.pos;
+            transform.velocity.setMag(patrol.speed);
+        }
+    }
 }
 
 static void resolveTileCollision(std::shared_ptr<Entity> tile, std::shared_ptr<Entity> entity)
