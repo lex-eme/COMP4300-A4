@@ -1,7 +1,7 @@
 #include "Entity.h"
 
 Entity::Entity(const size_t id, const std::string& tag)
-	: m_ID(id), m_Tag(tag), m_Components(CTransform(), CLifeSpan(), CDamage(), CInput(), CBoundingBox(), CAnimation(), CState(), CInvincibility(), CHealth(), CPatrol(), CFollowPlayer())
+	: m_ID(id), m_Tag(tag)
 {
 }
 
