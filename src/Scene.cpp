@@ -15,7 +15,6 @@ void Scene::simulate(const size_t frames)
 	for (size_t i = 0; i < frames; i++)
 	{
 		update();
-		m_CurrentFrame += 1;
 	}
 }
 

@@ -54,7 +54,7 @@ Animation     RockTL          TexRockTL           1   0
 Animation     RockTM          TexRockTM           1   0
 Animation     RockTR          TexRockTR           1   0
 Animation     RockBL          TexRockBL           1   0
-Animation     RockB           TexRockBM           1   0
+Animation     RockBM          TexRockBM           1   0
 Animation     RockBR          TexRockBR           1   0
 Animation     WaterTL         TexWaterTL          1   0
 Animation     WaterTM         TexWaterTM          1   0

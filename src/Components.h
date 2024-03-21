@@ -21,6 +21,8 @@ struct CTransform : public Component
 	CTransform() {}
 	CTransform(const Vec2& p)
 		: pos(p), prevPos(p) {}
+	CTransform(const Vec2& p, const Vec2& sc)
+		: pos(p), prevPos(p), scale(sc) {}
 	CTransform(const Vec2& p, const Vec2& sp, const Vec2& sc, float a)
 		: pos(p), prevPos(p), velocity(sp), scale(sc), angle(a) {}
 };
@@ -82,6 +84,7 @@ struct CAnimation : public Component
 struct CState : public Component
 {
 	std::string state = "stand";
+	bool changed = false;
 
 	CState() {}
 	CState(const std::string& s)
@@ -103,8 +106,8 @@ struct CHealth : public Component
 	int current = 1;
 
 	CHealth() {}
-	CHealth(int m, int c)
-		: max(m), current(c) {}
+	CHealth(int m)
+		: max(m), current(m) {}
 };
 
 struct CPatrol : public Component

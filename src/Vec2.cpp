@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-constexpr auto PI = 3.14159265;
+constexpr auto PI = 3.14159265f;
 
 Vec2::Vec2() {}
 
@@ -87,6 +87,11 @@ float Vec2::distSq(const Vec2& rhs) const
 float Vec2::mag() const
 {
 	return sqrt(x * x + y * y);
+}
+
+float Vec2::cross(const Vec2& rhs) const
+{
+	return x * rhs.y - y * rhs.x;
 }
 
 Vec2& Vec2::normalize()

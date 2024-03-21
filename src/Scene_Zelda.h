@@ -7,7 +7,6 @@ class Scene_Zelda : public Scene
 	struct PlayerConfig
 	{
 		float X, Y, CX, CY, SPEED, HEALTH;
-		std::string WEAPON;
 	};
 
 	std::string					m_LevelPath;
@@ -43,5 +42,12 @@ private:
 	void sGUI();
 	void sRender() override;
 	void sDoAction(const Action& action) override;
-};
 
+	// Helper
+	void moveEntities(const std::string& tag);
+	void tileCollision();
+	void playerEnemyCollision();
+	void heartCollision();
+	void resolveHeartCollision(std::shared_ptr<Entity> heart, std::shared_ptr<Entity> entity);
+	void swordEnemyCollision();
+};

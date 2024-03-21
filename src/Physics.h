@@ -4,8 +4,8 @@
 
 struct Intersect
 {
-	bool intersect;
-	Vec2 where;
+	bool result;
+	Vec2 pos;
 };
 
 class Physics

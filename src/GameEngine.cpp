@@ -76,7 +76,7 @@ void GameEngine::init(const std::string& path)
 {
 	m_Assets.loadFromFile(path);
 
-	m_Window.create(sf::VideoMode(1920, 1080), "Not Zelda");
+	m_Window.create(sf::VideoMode(1280, 768), "Not Zelda");
 	m_Window.setVerticalSyncEnabled(true);
 
 	ImGui::SFML::Init(m_Window);
